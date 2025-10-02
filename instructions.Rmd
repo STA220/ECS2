@@ -1,0 +1,248 @@
+---
+title: "Computer session 1"
+format: html
+execute: 
+  eval: false
+---
+
+# Targets
+
+You need to have the targets package installed:
+
+```{r}
+install.packages("targets")
+library(targets)
+install.packages("tarchetypes")
+```
+
+Have a look at the `_targets.R` file and try to understand what will happen when you execute the pipeline for the first time.
+
+Then do just that:
+
+```{r}
+targets::tar_make()
+```
+
+You have now (hopefully) downloaded a zip file with all data needed.
+
+Lets unzip the zip file for easier access to the individual files it contains. Using targets, this should be performed by specifying a target in the `_targets.R` file.
+
+The already defined target provide you with the filename to the zip-file (what is it?) in the object `zipdata.`
+
+We therefore use `zipdata` as argument to the the unzip-function. Afer unzipping the folder, by `zip::unzip()` we also return the file names of all files put into the newly created `data-fixed` folder.
+
+1.  Copy and paste the following line to the relevant place in the `_targets.R` file. Save the file (`Ctrl/Cmd + s`)
+2.  Run `tar_make()` interactively from the console to execute the now updated pipeline.
+
+```{r}
+tar_target(csv_files, zip::unzip(zipdata))
+```
+
+All data files (`.csv`) should now be found in the `data-fixed` folder (make sure that is the case).
+
+# Data
+
+The data previously unpacked is synthetic data from the [Synthea project](https://synthetichealth.github.io/synthea/).
+
+::: callout-important
+## Synthetic data
+
+Note that no personal details are "real"! The data are all fake, alhough it aims to be realistic. As such, we can use it for learning purposes and we do not need to be afraid of sharing the data publically or transfering it between computers etc. Note, however, that the data can not be used for any "real" discovery of scientific importance! Hence, you might discover some interesting patterns or associations in the data which might be fictitious!
+:::
+
+## Preview the data
+
+In Positron, you can simply click on the `.csv` files found in the `data-fixed` folder to preview their contents. Play around with the filters and summaries to get a glance of the data you are given. \[Help\](<https://positron.posit.co/data-explorer.html>)\].
+
+## fread
+
+We need to read in the csv data before we can work with it in R. We like data.table objects when working with big data and can use `data.table::fread()` for individual csv files.
+
+We could also take all the csv file names from the `data-fixed` folder and make a big list of data.table objects. Try what happens if you run (and read the necessary function documentation to understand what you do) this code:
+
+```{r}
+fs::dir_map("data-fixed", data.table::fread)
+```
+
+When working within a pipeline it can be handy, however, to convert all csv data sets and cache them using a more efficient file format. We have instructed targets to use the qs2 storage format internally (its on one of the first lines in `_targets.R` although it is there called `qs` and not `qs2`; see \[qs2\](<https://github.com/qsbase/qs2>)).
+
+In this case, however, we can use targets to not only read the files but also to store individual qs2-files for each original csv file. The code is a bit complex so it's already inserted in the pipeline.
+
+1.  Uncomment the relevant section to activate the target using `tar_map`.
+2.  Try to understand what the uncomment code is supposed to do and add relevant comments to the code.
+3.  Save and run `tar_make().`
+4.  look in the `_targets/objects` folder and confirm that your datasets have now been cached with prefix `dt_`
+5.  Those files lack file extensions (they could have been named `dt_xxx.qs2` but lacks the `.qs2` part). Read one of the files by `tar_read(____)` where \_\_\_\_ is replaced by the name of a dataset.
+
+## Codebook/variable list
+
+We now have access to a couple of data sets but honestly, we don't really know much about them yet!
+
+Let's have a closer look at `dt_patients`. The data can be read as above but instead, let's load it by `tar_load(dt_patients)`. When loaded, tha data set will be available in your R session with the same name (`dt_patients`).
+
+Perform your usual steps to familiarise yourself with this data set. Use functions such as `dim(), head(), dplyr::glimpse(), View(), summary(), skimr::skim()` etc.
+
+But what do the columns actually mean? Some of them might be self evident and if you have some familiarity with the US you might guess for example that `ssn` means social security number (a different concept compared to the Swedish personal identity number). Here are some [descriptions of the data](https://github.com/synthetichealth/synthea/wiki/CSV-File-Data-Dictionary).
+
+Have a look at the function `get_codebook()` (you'll find it in the R-folder). Add some comments to that file to describe what it's for.
+
+Functions in the R-folder are accessed automatically from within the pipeline but to test those functions interactively, you must explicitly load it by executing the function definition, source the containing file, or by running `tar_source()`
+
+Try running:
+
+```{r}
+tar_source()
+get_codebook()
+```
+
+What is the result? What can it be used for? You need to understand at least some of the source code for the `get_codebook()` function to answer this!
+
+Lets cache the output from this function by adding it to the targets pipeline. Add something like this at the relevant place in the `_targets.R` file:
+
+```{r}
+tar_target(codebook, _____())
+```
+
+Save file and run `tar_make()`. Load the codebook and let's have a look at the variables found in the `dt_patients` data set:
+
+```{r}
+tar_load(codebook)
+cb_patients <- codebook[file == "patients.csv"]
+
+# Which columns are relevant for `patients`?
+cb_patients[, column_name]
+
+# Well, those columns don't actually match the column names used in the data!
+# Do you notice a pattern in how the names differ?
+# Let's fix that
+cb_patients[, column_name := tolower(column_name)]
+
+# Do we have any variables which are not documented?
+setdiff(names(dt_patients), cb_patients[, column_name]) # Non-documented
+
+# Yep, so let's fix that manually
+cb_patients[, column_name := gsub(" county code", "", column_name)]
+```
+
+OK, well we found somethings that we might need to change in order to match the actual variable names to the codebook. We did it interactively above but we need to do this in a way so that the targets pipeline will get it right as well! It actually seems that all our data sets have only lower case column names even if that is not the case according to the formal documentation found online (which was downloaded and parsed by `get_codebook()`.
+
+1.  Modify the `get_codebook()` function so it will change all variable names to lower case.
+2.  save and rerun the pipeline (`tar_make()`)
+
+Are there any additional columns from other datasets which are not described correctly by the codebook?
+
+Try to understand what I do with the following code, run it yourself, interpret the result and draw a conclusin how the observed vs defined variable names differ:
+
+```{r}
+library(tidyverse)
+library(data.table)
+
+names_in_data <-
+  tibble(files = dir("_targets/objects", "dt_")) |>
+  mutate(
+    column_name = map(files, \(x ) names(tar_read_raw(x)), .progress = TRUE),
+    file = paste0(gsub("dt_", "", files), ".csv")
+  ) |>
+  unnest(column_name) |>
+  setDT()
+
+codebook[, column_name := tolower(column_name)]
+
+names_in_data[!codebook, on = c("file", "column_name")]
+codebook[!names_in_data, on = c("file", "column_name")]
+```
+
+Well, such missmatches can be very frustrating and it often takes a lot of time to fix! Unfortunately, this is the reality in many real world cases! The interpretation of a data set is selldom as intuitive as one might hope for. But let's not get stuck here for the moment!
+
+## Labels
+
+Codebooks/variable list are somewhat helpful but they usually exist as a separate document (a PDF, or web page as illustrated above). We showed how to convert the documentation to something more useful above but wouldn't it be nice to integrate it more directly with the data? People working with SPSS data are quite used to having labels attached to the column names. This is not the default in R but the package labelled (<https://larmarange.github.io/labelled/>) can be used (install it!).
+
+Add labels to the patient data:
+
+```{r}
+labelled::var_label(dt_patients) <-
+  cb_patients[, setNames(description, column_name)]
+```
+
+Now, what does ssn actually mean?
+
+```{r}
+labelled::look_for(dt_patients, "ssn")
+```
+
+What does income mean?
+
+```{r}
+labelled::look_for(dt_patients, "income")
+```
+
+Well that's some level of detail but is it enough for analysis? Does this include all sorts of income? Salary, insurance, benefits, pensions etc? What is the unit of measurement? SEK? DKK? USD? Does the value need to be multiplied by 1000 to get the actual value? Is it income from the last known year, an averager over time or from some other year?
+
+```{r}
+dt_patients[, hist(income)]
+```
+
+Woo, we have some rich people here! Who are they? Where can I find them? Let me check their adresses ... WAIT, WHAT? Does our ethical permission allow such use of the data?
+
+One package witch uses the labels is [{gtsummary}](https://www.danieldsjoberg.com/gtsummary/). Lets make a simple table 1 for our cohort.
+
+Well, some of the variabels are probably not as relevant to include in such a table AND NOTE that some might not even be allowed due to legal restrictions/GDPR etc! (Well, in this case the data is fake, but you get the point!)
+
+Also note that the date format is not recognized by gtsummary. Dates and times are often tricky! In this case we might first convert tha date columns to R:s native date format (instead of the more efficient IDate format used by data.table).
+
+I pick a few variable which might be of interest!
+
+```{r}
+gtsummary::tbl_summary(dt_patients[, .(marital, race, ethnicity, gender, state)]) 
+```
+
+Note that we have nice labels for the different column names but we are still lacking interpratable labels for individual factor levels.
+
+What's your conclusion based on the data? Do we have data from the whole US population? Is it a representative sample from the whole country?
+
+## Data scans
+
+Have a look at the \[pointblank\](<https://rstudio.github.io/pointblank/>) package.
+
+Install the package and look at the documentation for `?scan_data`
+
+Let's summarise whats in the `dt_patients` data:
+
+```{r}
+dt_patients |> pointblank::scan_data(sections = "OMSV")
+```
+
+See, the nice labels are used here to :-)
+
+Wouldn't it be nice to have such documentation saved for all the data sets we are working with?
+
+Look at the `data_scans()` function found in the R-folder and try to grasp how it works and add some comments to it if relevant.
+
+Add something like this to the targets pipeline:
+
+```{r}
+  tar_target(data_scan_patient, ___________(______, "patients"), format = "file")
+```
+
+Add multiple targets for all data sets which seem relevant and look at the output to get to know your data better!
+
+There are better ways to generate data_scans for all data sets (instead of repeating the same line for each data set of choice but it's more complicated. The \[documentation\](<https://books.ropensci.org/targets/>) might help if you want to try it on your own).
+
+## Keys
+
+The data originates from a database where the concept of primary and foreign keys exists. This could be seen by the key column from the codebook. The primary key is a unique identifier for each row in a dataset. Which ones do we have?
+
+```{r}
+tar_read(codebook)[key == "primary", .(file, column_name)] 
+```
+
+Let's set the key for each of the datasets where this is relevant.
+
+Add the id key to dt_patients by:
+
+```{r}
+setkey(dt_patients, id)
+```
+
+We could do this by adding new targets to the pipeline. If so, however, we would end up with multiple versions of each cached data set. It seems unnecessary. Let's instead go back and add the keys aready before they are cached the first time. You were previsously asked to uncomment a line including the `fread()` function. We could add the key argument here to use the id column as key. The problem is that not all data sets have such id columns so you would need something. Try to found a solution if you have time and interest (otherwise not).
