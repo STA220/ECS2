@@ -5,6 +5,10 @@ execute:
   eval: false
 ---
 
+# Version control
+
+This is a Git repo which you have now cloned. Practice your git skills wy working!. Commit changes as soon as you feel it is relevant! Then, don't be afraid to break things. It is always possible to revert to a previous stage when things were still working!
+
 # Targets
 
 You need to have the targets package installed:
@@ -16,8 +20,6 @@ install.packages("tarchetypes")
 ```
 
 Have a look at the `_targets.R` file and try to understand what will happen when you execute the pipeline for the first time.
-
-Then do just that:
 
 ```{r}
 targets::tar_make()
