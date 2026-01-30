@@ -248,3 +248,5 @@ setkey(dt_patients, id)
 ```
 
 We could do this by adding new targets to the pipeline. If so, however, we would end up with multiple versions of each cached data set. It seems unnecessary. Let's instead go back and add the keys aready before they are cached the first time. You were previsously asked to uncomment a line including the `fread()` function. We could add the key argument here to use the id column as key. The problem is that not all data sets have such id columns so you would need something. Try to found a solution if you have time and interest (otherwise not).
+
+##
