@@ -8,15 +8,19 @@ get_codebook <- function() {
   tab_desc <- tabs[[1]]
   tab_vars <- setNames(tabs[-1], tab_desc$File)
 
-  dplyr::bind_rows(tab_vars, .id = "file") |>
-    janitor::clean_names() |>
-    dplyr::rename(key = x1) |>
-    dplyr::mutate(dplyr::across(dplyr::where(is.character), \(x) {
-      dplyr::na_if(x, "")
-    })) |>
-    dplyr::mutate(
-      required = as.logical(required),
-      key = factor(key, c("🔑", "🗝️"), c("primary", "foreign"))
-    ) |>
-    data.table::setDT()
+  cb <-
+    suppressMessages(
+      dplyr::bind_rows(tab_vars, .id = "file") |>
+        janitor::clean_names() |>
+        dplyr::rename(key = x1) |>
+        dplyr::mutate(dplyr::across(dplyr::where(is.character), \(x) {
+          dplyr::na_if(x, "")
+        })) |>
+        dplyr::mutate(
+          required = as.logical(required),
+          key = factor(key, c("🔑", "🗝️"), c("primary", "foreign"))
+        ) |>
+        data.table::setDT()
+    )
+  cb
 }

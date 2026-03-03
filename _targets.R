@@ -1,34 +1,39 @@
 library(targets)
 library(tarchetypes) # For extra target archetypes
 
-# Definiera paketlista
+# Which packages do you need?
 pkgs <- c(
-  "data.table", # fast data management
   "janitor", # data cleaning
   "labelled", # labeling data
   "pointblank", # data validation and exploration
   "rvest", # get data from web pages
   "tidyverse", # Data management
+  "data.table", # fast data management
+  "fs", # to work wit hthe file system
   "zip" # manipulate zip files
 )
-# Ladda paketen i interaktiv session (så du kan använda dem i konsolen)
+# Install packages if you don't already have them
+install.packages(setdiff(pkgs, row.names(installed.packages())))
+
+# NOTE! The packages specified in `pkgs` will be used by the targets.
+# They will, however, not be available within the interactive session unless you also load them here:
 invisible(lapply(pkgs, library, character.only = TRUE))
 
 # Set target options:
 tar_option_set(
   # Packages that your targets need for their tasks:
   packages = pkgs,
-  format = "qs", # Default storage format. qs is fast.
+  format = "qs", # Default storage format. qs (which is actually qs2) is fast.
 )
 
-# Run the R scripts in the R/ folder with your custom functions:
+# Run the R scripts stored in the R/ folder where your have stored your custom functions:
 tar_source()
 
-# We first download the data file if they not exist
+# We first download the data health care data of interest
 if (!fs::file_exists("data.zip")) {
   message("Downloading data.zip from GitHub")
   curl::curl_download(
-    "https://github.com/eribul/cs/raw/refs/heads/main/data.zip",
+    "https://github.com/STA220/cs/raw/refs/heads/main/data.zip",
     "data.zip",
     quiet = FALSE
   )
@@ -41,9 +46,10 @@ if (!fs::file_exists("data.zip")) {
 
 list(
   # make the zipdata object refer to the data.zip file path
-  tar_target(zipdata, "data.zip", format = "file"),
+  tar_target(zipdata, "data.zip", format = "file")
 
   # TODO: Something related to zip should be added here:
+  # And this comment should be replaced by something more useful
 
   # TODO: uncomment this section when instructed
   # tar_map(
