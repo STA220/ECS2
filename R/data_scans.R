@@ -5,7 +5,7 @@
 
 # For one data set at the time
 export_data_scan <- function(dt, name, max_rows = 1e3) {
-  data <- if (nrow(dt) > max_rows) {
+  data <- if (!is.null(max_rows) && nrow(dt) > max_rows) {
     warning("Only useing a sample of the data!")
     dt[sample.int(nrow(dt), max_rows)]
   } else {
