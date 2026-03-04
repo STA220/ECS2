@@ -19,22 +19,26 @@ This is a Git repo which you have now cloned. Read the instructions below and ma
 ::: callout-important
 ## Commit efter each subsection
 
-After you have finished each section (starting from number 2), commit your changes by a message starting with the section number, for example `#2 first attempt`. You can make additional changes after that (with any informative commit message), but then label your first commit for section 3 with `3# bla bla bla` etc. You can use different branches etc for different sections of the instructions (if you would like to explore additional capabilities of gir, but it is not required for the course). Push your changes back to GitHub each time or more seldom if you prefer (but don't forget to do it at least when you finish!).
+After you have finished each section (starting from number 2), commit your changes by a message starting with the section number, for example `#2 first attempt`. You can make additional changes after that (with any informative commit message), but then label your first commit for section 3 with `#3 bla bla bla` etc. You can use different branches etc for different sections of the instructions (if you would like to explore additional capabilities of git, but it is not required for the course). Push your changes back to GitHub each time or more seldom if you prefer (but don't forget to do it at least when you finish!).
 :::
 
 Don't be afraid to break things. It is always possible to revert to a previous commit when things were still working!
+
+::: {.callout-important}
+# Interactive vs pipeline
+You will be instructed below to make modifications of existing files, including the `_targets.R` file.
+Sometimes, however you are instructed to call functions such as `tar_make()` and `tar_load()`. Those functions calls should not be included within the pipeline itself. They are used to execute the pipeline. Run those commands interactively from the console or save them in a separate R-script (such as `render.R`).
+:::
 
 # Targets
 
 You need to have the targets and tarchetypes packages installed and loaded.
 
 ```{r}
-if (!requireNamespace("targets", quietly = TRUE)) {
-  install.packages("targets")
-}
-if (!requireNamespace("tarchetypes", quietly = TRUE)) {
-  install.packages("tarchetypes")
-}
+# | eval: false
+install.packages(c("targets", "tarchetypes", "qs2"))
+
+# Also load the targets package
 library(targets)
 ```
 
@@ -115,9 +119,9 @@ Perform your usual steps to familiarise yourself with this data set. Use functio
 
 But what do the columns actually mean? Some of them might be self evident and if you have some familiarity with the US you might guess for example that `ssn` means social security number (a different concept compared to the Swedish personal identity number). Here are some [descriptions of the data](https://github.com/synthetichealth/synthea/wiki/CSV-File-Data-Dictionary) (take a look!).
 
-Have a look at the function `get_codebook()` (you'll find it in the R-folder). Add some comments to that file to describe what it's for. The best way to document a function is visualized in a [18 sec long screen recording](https://github.com/posit-dev/ark/pull/809). You might also have a closer look at [Documenting functions](https://roxygen2.r-lib.org/articles/rd.html) to additionaly structure your function documentation(not required but recommended).
+Have a look at the function `get_codebook()` (you'll find it in the R-folder). Add some comments to that file to describe what it's for. The best way to document a function is visualized in a [18 sec long screen recording](https://github.com/posit-dev/ark/pull/809). You might also have a closer look at [Documenting functions](https://roxygen2.r-lib.org/articles/rd.html) to additionaly structure your function documentation (not required but recommended).
 
-Functions in the R-folder are accessed automatically from within the pipeline but to test those functions interactively, you must first explicitly load them by executing the function definition, source the containing file, or by running `tar_source()` (which is done in the beginning of `_taggets.R` and therefore implicitly when calling `tar_make()`)
+Functions in the R-folder are accessed automatically from within the pipeline but to test those functions interactively, you must first explicitly load them by executing the function definition, source the containing file, or by running `tar_source()` (which is done in the beginning of `_targets.R` and therefore implicitly when calling `tar_make()`)
 
 Try running:
 
@@ -128,7 +132,7 @@ get_codebook()
 
 What is the result? What can it be used for? You need to understand at least some of the source code for the `get_codebook()` function to answer this!
 
-Lets cache the output from this function by adding it to the targets pipeline. Add something like this at the relevant place in the `_targets.R` file:
+Let's cache the output from this function by adding it to the targets pipeline. Add something like this at the relevant place in the `_targets.R` file:
 
 ```{r}
 tar_target(codebook, _____())
@@ -215,7 +219,7 @@ What does income mean?
 labelled::look_for(dt_patients, "income")
 ```
 
-Well that's some level of detail but is it enough for analysis? Does this include all sorts of income? Salary, insurance, benefits, pensions etc? What is the unit of measurement? SEK? DKK? USD? Does the value need to be multiplied by 1000 to get the actual value? Is it income from the last known year, an averager over time or from some other year?
+Well that's some level of detail but is it enough for analysis? Does this include all sorts of income? Salary, insurance, benefits, pensions etc? What is the unit of measurement? SEK? DKK? USD? Does the value need to be multiplied by 1000 to get the actual value? Is it income from the last known year, an average over time or from some other year?
 
 ```{r}
 dt_patients[, hist(income)]
@@ -223,7 +227,7 @@ dt_patients[, hist(income)]
 
 Woo, we have some rich people here! Who are they? Where can I find them? Let me check their adresses ... WAIT, WHAT?
 
-One package using labels is [{gtsummary}](https://www.danieldsjoberg.com/gtsummary/). Lets make a simple table 1 (a demography table, generally the first table to appear in a scientific article in medicine/epidemiology) for our cohort.
+One package using labels is [{gtsummary}](https://www.danieldsjoberg.com/gtsummary/). Let's make a simple "table 1" (a demography table, generally the first table to appear in a scientific article in medicine/epidemiology) for our cohort.
 
 Note that the date format (`IDate` from `data.table` package) is not recognized by gtsummary (feel free to [submit a "bug report"/issue](https://github.com/ddsjoberg/gtsummary/issues) if you prefer). Dates and times are often tricky! In this case we might first convert tha date columns to R:s native date format (instead of the more efficient IDate format as used by data.table).
 
@@ -232,7 +236,7 @@ But, let's ignore the dates for now and just pick a few other variables which mi
 ::: {.callout-note}
 # What do the labels actually mean?
 
-- `race`: In medical and epidemiological research, it is not uncommon to encounter a variable labelled `race`, particularly in data originating from certain countries. For Swedish students, this may appear unusual, as such categorisation is generally not used in Swedish registers. The meaning, construction, and legal basis of this variable vary substantially across countries, and it may reflect self-identification, administrative classification, or other criteria.
+- `race`: In medical and epidemiological research, it is not uncommon to encounter a variable labelled `race`, particularly in data originating from certain countries. For some, this may appear unusual, as such categorisation is generally not used in Swedish registers. The meaning, construction, and legal basis of this variable vary substantially across countries, and it may reflect self-identification, administrative classification, or other criteria.
 - `marital status`: The definition and classification of marital status may differ across countries and historical periods. For example, marriage is currently gender-neutral in Sweden. However, when working with historical data, categories such as “registered partnership” (previously used for same-sex couples) may need to be reclassified depending on the analytical purpose. Legal definitions may also change over time.
 - `gender`: In Swedish population registers, this variable is typically derived from the personal identity number, where the parity (odd/even) of a specific digit indicates legal sex. More precisely, this reflects legal sex, which may or may not correspond to biological sex or gender identity. Careful terminology is therefore important when interpreting such variables.
 - `country of birth` / `citizenship`: Such variables are often treated as interchangeable, but they represent different concepts. Country of birth is typically fixed over time, whereas citizenship may change (and one may have multiple citizenships). In addition, citizenship does not necessarily reflect migration background, ethnicity, or cultural identity. Historical changes in state borders may also affect interpretation: for example, a person recorded as born in the Soviet Union may today be associated with a country that did not exist at the time of birth. When analysing such variables, it is therefore important to understand both the administrative definition used in the register and the geopolitical context at the time of registration.
@@ -250,7 +254,7 @@ gtsummary::tbl_summary(dt_patients[, .(
 
 Note that we have informative labels for the different column names but we are still lacking interpratable labels for individual factor levels.
 
-What's your conclusion based on the data? Do we have data from the whole US population? Is it a representative sample from the whole country (based on the variables we choosed to include in the table, age, social status and a myriad other factors currently ignored)?
+What's your conclusion based on the data? Do we have data from the whole US population? Is it a representative sample from the whole country (based on the variables we choosed to include in the table, age, social status and a myrriad of other factors currently ignored)?
 
 ## Data scans
 
@@ -282,7 +286,7 @@ There are better ways to generate data_scans for all data sets (instead of repea
 
 ::: {.callout-note}
 # `max_rows`
-`export_data_scan()` has an argument `max_rows` with a default value. What does it mean? There seems to be no good reason for it and you can try to choose a higher number or to the remove the limitation it is imposing.
+`export_data_scan()` has an argument `max_rows` with a default value. What does it mean? There seems to be no good reason for it and you can try to choose a higher number or to remove the limitation it is imposing.
 It is currently a work around for [this reported issue](https://github.com/rstudio/pointblank/issues/550).
 If you agree that this is a problem, please feel free to upvote Hadleys comment in the beginning of the issue.
 :::
@@ -303,7 +307,7 @@ Add the id key to dt_patients by:
 setkey(dt_patients, id)
 ```
 
-We could do this by adding new targets to the pipeline. If so, however, we would end up with multiple versions of each cached data set. It seems unnecessary. Let's instead go back and add the keys aready before they are cached the first time. You were previsously asked to uncomment a line including the `fread()` function. We could add the key argument here to use the id column as key. The problem is that not all data sets have such id columns so you would need something extra. Try to found a solution if you have time and interest (otherwise not). 
+We could do this by adding new targets to the pipeline. If so, however, we would end up with multiple versions of each cached data set. It seems unnecessary. Let's instead go back and add the keys aready before they are cached the first time. You were previsously asked to uncomment a line including the `fread()` function. We could add the key argument here to use the id column as key. The problem is that not all data sets have such id columns so you would need something extra. Try to find a solution if you have time and interest (otherwise not). 
 
 Tip: The current function code involves a call to: `fread(path)`. You could make a new function, maybe something like 
 
@@ -311,8 +315,8 @@ Tip: The current function code involves a call to: `fread(path)`. You could make
 #| eval: false
 fread_key <- function(path) {
   x <- fread(path)
-  if (hasName(x, "Id")) {
-    setkey(x, Id)
+  if (hasName(x, "id")) {
+    setkey(x, id)
   }
   x
 }
